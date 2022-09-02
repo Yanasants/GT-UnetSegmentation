@@ -25,7 +25,7 @@ ORIGINAL_SIZE = 850
 NEW_SIZE = 256
 
 # Choose train folder TM40 ou TM46
-_folder = '/TM40_Original'
+_folder = '/home/yana/Documentos/GT-DL/TM40_Original'
 # _folder = './dados_girino/TM46_40prod'
 
 norm_imgs = sorted(glob.glob(_folder + '/Norm_images/'))
