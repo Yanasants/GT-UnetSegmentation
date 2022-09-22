@@ -1,4 +1,4 @@
-## Ambiente virtual
+## Ambiente virtual GT_UnetSegmentation
 
 * #### Criação do Environment 
     
