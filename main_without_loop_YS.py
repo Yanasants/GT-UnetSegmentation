@@ -84,7 +84,7 @@ epochs = 100
 
 create_folder('./TM40_46Prod/outputs') #att
 
-n_fold = 1
+n_fold = 1 #must be manually changed to organize the results in different folders
 
 exec_moment = str(datetime.datetime.now()).replace(':','-').replace(' ','-') #att
  
