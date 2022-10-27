@@ -62,7 +62,7 @@ NEW_SIZE = 256
 
 # Choose train folder TM40 ou TM46
 _folder = './TM40_Original'
-# _folder = './dados_girino/TM46_40prod'
+
 
 norm_imgs = sorted(glob.glob(_folder + '/Norm_images/*')) 
 GT_imgs = sorted(glob.glob(_folder + '/GT_images/*'))
@@ -163,7 +163,7 @@ history = model.fit(trainDS,
         validation_data=valDS)
 
 #att
-if (n_fold == 1):
+if (n_fold == 0):
     exec_folder_name = './TM40_46Prod/outputs/Exec_%s'%(exec_moment) #first execution
 else:
     exec_folder_name = './TM40_46Prod/outputs/Exec_2022-10-26-17-37-19.190820' #must be manually changed
