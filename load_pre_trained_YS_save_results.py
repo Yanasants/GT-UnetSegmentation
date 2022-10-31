@@ -9,7 +9,7 @@ from tensorflow import keras
 from keras import backend as K
 K.clear_session()
 
-from utils import create_folder, resize_one_img, load_images_array, load_images_array_return_shape
+from utils_YS import create_folder, resize_one_img, load_images_array, load_images_array_return_shape, save_results
 
 from utils_metrics import calcula_metricas
 
