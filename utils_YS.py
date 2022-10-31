@@ -109,12 +109,8 @@ def save_results(general_statistics:dict, n_fold:int, n_fold_path:str):#calculan
     value = sum(general_statistics[key])/n_fold
     general_statistics[key].append(value)
 
-  list_columns = ['MEAN','STD','MEDIAN','MAX', 'MIN']
-
   #criando dataframe a partir do dicionário
-  df_statistics = pd.DataFrame(zip(general_statistics['mean'],general_statistics['std'], \
-                               general_statistics['median'], general_statistics['max'],
-                               general_statistics['min']), columns = list_columns)
+  df_statistics = pd.DataFrame(general_statistics)
 
   #organizando a planilha
   df_statistics.index.names = ['N_FOLD'] 
