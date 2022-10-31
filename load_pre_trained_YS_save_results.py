@@ -87,11 +87,11 @@ for i in range(n_fold):
     max_value = round(np.max(dice_list),4)
     min_value = round(np.min(dice_list),4)
     #adicionando no dicionário general_statistics
-    general_statistics['mean'].append(mean)
-    general_statistics['std'].append(std)
-    general_statistics['median'].append(median)
-    general_statistics['max'].append(max_value)
-    general_statistics['min'].append(min_value)
+    general_statistics['MEAN'].append(mean)
+    general_statistics['STD'].append(std)
+    general_statistics['MEDIAN'].append(median)
+    general_statistics['MAX'].append(max_value)
+    general_statistics['MIN'].append(min_value)
     
     print('Salvando valores de Dice...\nMédia dos Dices: ' + str(round(np.mean(dice_list),4)))
     with open(n_fold_folder_name + 'outputs_prod/dice_production.txt', 'w') as file:
