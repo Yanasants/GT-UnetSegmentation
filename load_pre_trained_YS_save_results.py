@@ -44,7 +44,7 @@ GT_Test_dice = load_images_array(GT_Test, new_size = NEW_SIZE)
 n_exec = 1
 n_fold = 2 #10
 
-general_statistics = {'mean':[],'std':[],'median':[],'max':[],'min':[]} #att: salva as estatísticas nas respectivas listas
+general_statistics = {'MEAN':[],'STD':[],'MEDIAN':[],'MAX':[],'MIN':[]} #att: salva as estatísticas nas respectivas listas
 
 for i in range(n_fold):
     
