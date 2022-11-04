@@ -164,7 +164,7 @@ if (n_fold == 0):
     exec_folder_name = './TM40_46Prod/outputs/Exec_%s'%(exec_moment) #first execution
 else:
     exec_folder_name = './TM40_46Prod/outputs/Exec_2022-10-27-11-24-23.150514' #must be manually changed
-    exec_moment = exec_folder_name.split('/')[-1]
+    exec_moment = exec_folder_name.split('/')[-1].split('_')[1]
     
 create_folder(exec_folder_name)
 n_fold_folder_name = './%s'%(exec_folder_name) + "/fold_%i"%n_fold
