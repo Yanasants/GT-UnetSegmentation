@@ -8,7 +8,7 @@ MIT License | Copyright (c) 2022 Eduardo Destefani Stefanato
 # imports
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from image import X_new, X, y
+#from image import X_new, X, y
 from os import listdir
 import numpy as np
 """
@@ -20,6 +20,10 @@ def display_multiple_img(images, rows=1, cols=1):
     plt.tight_layout()
     plt.show()
 """
+#att YS - need to load images from the directories
+X = #TM40 images
+X_new = #TM46 images
+
 # Objects selection
 names_model = sorted(listdir('model_saves/'))
 tp_idx = tuple(range(len(names_model)))
