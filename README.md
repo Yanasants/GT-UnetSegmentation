@@ -1,4 +1,4 @@
-<h1 align="center">Síncrotron Image Segmentation</h1>
+<h1 align="center">Síncrotron Image Segmentation |⏳ Project in progress </h1>
 
 This repository was made to organize files used to the research *"U-Net Pre-trained Network to Segmentation of Biomedical Images obtained by Synchrotron Radiation"*,
 in development on Laboratory of Computacional Intelligence of University of Western Pará (UFOPA-Pará-Brazil).
