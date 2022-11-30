@@ -17,7 +17,7 @@ in development on Laboratory of Computacional Intelligence of University of West
 <h4 align="center">The dataset is subdivided in two directories, the one containing normalized images of frog eyes and the other one with the Ground Truth</h4>
 
 <p align="center">
-  <img width="500" height="280" src="https://user-images.githubusercontent.com/59098432/204899431-d74fcd48-5102-4543-a1f6-d873feb1be14.png">
+  <img width="500" height="150" src="https://user-images.githubusercontent.com/59098432/204899431-d74fcd48-5102-4543-a1f6-d873feb1be14.png">
 </p>
 
 <h4 align="center">Author's Compilation</h4>
