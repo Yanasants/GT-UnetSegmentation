@@ -75,7 +75,9 @@ Y = load_images_array(GT_imgs, new_size = NEW_SIZE)
 
 print(X.shape)
 
-callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=0, patience=10)
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=0, patience=10)
+reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
+                              patience=50, min_lr=0.001)
 
 use_batch_size = 8
 
@@ -155,7 +157,7 @@ model = Unet(backbone_name='vgg16', encoder_weights=None,
 model.compile(optimizer=Adam(), loss=bce_jaccard_loss, metrics=[iou_score]) #bce_jaccard_loss
 
 history = model.fit(trainDS, 
-        epochs=epochs, #callbacks=callback, 
+        epochs=epochs, callbacks=[reduce_lr], 
         validation_data=valDS)
 
 if (n_fold == 0):
@@ -180,3 +182,4 @@ plt.legend(['train', 'validation'], loc='upper left')
 plt.savefig(n_fold_folder_name + '/loss_%i.png'%n_fold)
 plt.close()
 np.save(n_fold_folder_name + '/history_%i.npy'%n_fold, history.history)
+
