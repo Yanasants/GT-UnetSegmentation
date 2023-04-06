@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import pandas as pd
 from skimage import io
 import cv2
 import glob
@@ -103,17 +102,3 @@ def normalize(images):
     if (m != mi):
         images = (images - mi) / (m - mi)
     return images
-    
-def save_results(general_statistics:dict, n_fold:int, n_fold_path:str):#calculando os valores médios finais
-  for key in general_statistics:
-    value = sum(general_statistics[key])/n_fold
-    general_statistics[key].append(value)
-
-  #criando dataframe a partir do dicionário
-  df_statistics = pd.DataFrame(general_statistics)
-
-  #organizando a planilha
-  df_statistics.index.names = ['N_FOLD'] 
-  df_statistics = df_statistics.rename(index = {n_fold:"MEDIUM VALUES"})
-  #transformando o dataframe em arquivo excel
-  df_statistics.to_excel('./outputs/%s'%n_fold_path.title()+'/general_statistics_results_%s'%n_fold_path +'.xlsx')
