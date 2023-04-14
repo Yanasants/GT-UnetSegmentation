@@ -104,13 +104,19 @@ def normalize(images):
         images = (images - mi) / (m - mi)
     return images
     
-def save_results(general_statistics:dict, n_fold:int, n_fold_path:str):#calculando os valores médios finais
-  for key in general_statistics:
-    value = sum(general_statistics[key])/n_fold
-    general_statistics[key].append(value)
+def save_results(general_statistics:dict, n_fold:int, n_fold_path:str):#calculando os valores médios finai    
+  general_statistics['STD'].append(np.std(general_statistics['MEAN']))
+  general_statistics['MEDIAN'].append(np.median(general_statistics['MEAN']))
+  general_statistics['MAX'].append(np.max(general_statistics['MEAN']))
+  general_statistics['MIN'].append(np.min(general_statistics['MEAN']))
+  general_statistics['MEAN'].append(np.average(general_statistics['MEAN']))
+
+  list_columns = ['MEAN','STD','MEDIAN','MAX', 'MIN']
 
   #criando dataframe a partir do dicionário
-  df_statistics = pd.DataFrame(general_statistics)
+  df_statistics = pd.DataFrame(zip(general_statistics['MEAN'],general_statistics['STD'], \
+                               general_statistics['MEDIAN'], general_statistics['MAX'],
+                               general_statistics['MIN']), columns = list_columns)
 
   #organizando a planilha
   df_statistics.index.names = ['N_FOLD'] 
