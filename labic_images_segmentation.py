@@ -219,19 +219,44 @@ class PredictImages:
         self.test_images = test_images
         self.model_name = model_name
         self.n_fold_folder_name = n_fold_folder_name
+        self.dir_predict = n_fold_folder_name
         self.batch = use_batch_size
         self.img_shape = img_shape
+
+        self.new_predicao = None
 
         self.predict()
 
     def predict(self):
         model = keras.models.load_model(self.model_name, compile=False)
-        new_predicao = model.predict(self.test_images.X)
-        new_predicao = np.uint8(255*(new_predicao > 0.5))
+        self.new_predicao = model.predict(self.test_images.X)
+        self.new_predicao = np.uint8(255*(self.new_predicao > 0.5))
 
         SaveReport.create_folder(self, self.n_fold_folder_name + '/outputs_prod')
-        for i in range(len(new_predicao)):
+        for i in range(len(self.new_predicao)):
             io.imsave(self.n_fold_folder_name + '/outputs_prod/predicao_%s_%s.png'%(str(self.test_images.GT_imgs[i][-7:-4]), str(self.batch)),\
-                       Dataset.resize_one_img(self, new_predicao[i], self.test_images.img_shape, self.test_images.img_shape))
+                       Dataset.resize_one_img(self, self.new_predicao[i], self.test_images.img_shape, self.test_images.img_shape))
         
         print("\nImagens preditas com sucesso.")
+
+
+class DiceCoef(Dataset):
+    def __init__(self, gt_imgs, pred_folder, new_size):
+        self.gt_imgs = gt_imgs
+        self.pred_folder = pred_folder
+        self.new_size = new_size
+
+        list_pred_imgs = sorted(glob.glob(f"{self.pred_folder}")) 
+        self.pred_imgs = Dataset.load_images_array(self, img_list=list_pred_imgs,original_size=self.new_size, new_size=self.new_size)
+
+        self.dice = self.dice_coef(y_true=self.gt_imgs, y_pred=self.pred_imgs)
+        print(f"Coeficiente Dice: {self.dice}")
+
+    def dice_coef(self, y_true, y_pred):
+        y_true_f = keras.backend.flatten(y_true) 
+        y_pred_f = keras.backend.flatten(y_pred) 
+        intersection = keras.backend.sum(y_true_f * y_pred_f)
+        return (2. * intersection + \
+            keras.backend.epsilon()) / (keras.backend.sum(y_true_f) + keras.backend.sum(y_pred_f) + keras.backend.epsilon())  
+
+
