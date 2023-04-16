@@ -27,24 +27,30 @@ from tensorflow.keras.optimizers import Adam
 from segmentation_models.losses import bce_jaccard_loss
 from segmentation_models.metrics import iou_score
 
+from skimage.util import img_as_float
+from tensorflow import keras
+
 #from utils_YS import create_folder, load_images_array
 
 class Dataset:
-    def __init__(self, folder:str, norm_imgs_folder:str, gt_folder:str, NEW_SIZE=None, X=None, Y=None):
+    def __init__(self, folder:str, norm_imgs_folder:str, gt_folder:str, ORIGINAL_SIZE=None, NEW_SIZE=None, X=None, Y=None):
         self.folder = folder
         self.norm_imgs_folder = norm_imgs_folder
         self.gt_folder = gt_folder
+        self.ORIGINAL_SIZE = ORIGINAL_SIZE
         self.NEW_SIZE = NEW_SIZE
         self.X = X
         self.Y = Y
         self.X_train, self.X_val, self.Y_train, self.Y_val = (None, None, None, None)
+        self.img_shape = None
+        self.norm_imgs, self.GT_imgs = None, None
         self.load_images()
-        
+
     def resize_one_img(self, img, width, height):
         self.curr_img = cv2.resize(img, (width, height))
         return self.curr_img
         
-    def load_images_array(self, img_list, new_size = None):
+    def load_images_array(self, img_list, original_size=160, new_size = None):
         '''
         Recebe um glob das imagens e converte em um numpy array no formato que o Keras aceita
         '''
@@ -62,16 +68,17 @@ class Dataset:
         
     def load_images(self):
 
-        norm_imgs = sorted(glob.glob(f"{self.folder}{self.norm_imgs_folder}")) 
-        GT_imgs = sorted(glob.glob(f"{self.folder}{self.gt_folder}")) 
+        self.norm_imgs = sorted(glob.glob(f"{self.folder}{self.norm_imgs_folder}")) 
+        self.GT_imgs = sorted(glob.glob(f"{self.folder}{self.gt_folder}")) 
                                         
-        for i in range(len(norm_imgs)):
-            if norm_imgs[i][-8:-4] != GT_imgs[i][-8:-4]:
+        for i in range(len(self.norm_imgs)):
+            if self.norm_imgs[i][-8:-4] != self.GT_imgs[i][-8:-4]:
                 print('Algo está errado com as imagens')
 
-        self.X = self.load_images_array(img_list=norm_imgs, new_size = self.NEW_SIZE)
-        self.Y = self.load_images_array(img_list=GT_imgs, new_size = self.NEW_SIZE)
+        self.X = self.load_images_array(img_list=self.norm_imgs, original_size=self.ORIGINAL_SIZE, new_size = self.NEW_SIZE)
+        self.Y = self.load_images_array(img_list=self.GT_imgs, original_size=self.ORIGINAL_SIZE, new_size = self.NEW_SIZE)
         print("\nImagens carregadas com sucesso.")
+        self.img_shape = self.X.shape[0]
     
     def split_dataset(self, seed_min=0, seed_max =2**20, test_size=0.2):
 
@@ -201,9 +208,30 @@ class SaveReport:
     
     def save_model(self):
         exec_moment, self.n_fold_folder_name, exec_folder_name = self.organize_folders()
-        self.name_file = str(self.use_batch_size) + "_" + str(self.epochs) + "_exec_%s"%(exec_moment) + "_fold_%i"%self.n_fold
-        self.model.save(self.n_fold_folder_name + '/_%s.h5'%self.name_file)
+        self.name_file = "model_"+ str(self.use_batch_size) + "_" + str(self.epochs) + "_exec_%s"%(exec_moment) + "_fold_%i"%self.n_fold
+        self.model_name = self.n_fold_folder_name + '/%s.h5'%self.name_file
+        self.model.save(self.model_name)
         print(f"\nModelo salvo.\nNome: {self.name_file}\nSalvo em: {exec_folder_name}")
         
 
-    
+class PredictImages:
+    def __init__(self, test_images, n_fold_folder_name, model_name, use_batch_size, img_shape):
+        self.test_images = test_images
+        self.model_name = model_name
+        self.n_fold_folder_name = n_fold_folder_name
+        self.batch = use_batch_size
+        self.img_shape = img_shape
+
+        self.predict()
+
+    def predict(self):
+        model = keras.models.load_model(self.model_name, compile=False)
+        new_predicao = model.predict(self.test_images.X)
+        new_predicao = np.uint8(255*(new_predicao > 0.5))
+
+        SaveReport.create_folder(self, self.n_fold_folder_name + '/outputs_prod')
+        for i in range(len(new_predicao)):
+            io.imsave(self.n_fold_folder_name + '/outputs_prod/predicao_%s_%s.png'%(str(self.test_images.GT_imgs[i][-7:-4]), str(self.batch)),\
+                       Dataset.resize_one_img(self, new_predicao[i], self.test_images.img_shape, self.test_images.img_shape))
+        
+        print("\nImagens preditas com sucesso.")
