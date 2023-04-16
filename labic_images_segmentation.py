@@ -185,16 +185,16 @@ class SaveReport:
 
         if (self.n_fold == 0):
             exec_moment = str(datetime.datetime.now()).replace(':','-').replace(' ','-') 
-            self.imgs_to_predict = f"/outputs/{self.exec_folder_name}"
-            self.exec_folder_name = f'{self.folder_name}{self.imgs_to_predict}'
+            self.output_folder = f"/outputs/Exec_{exec_moment}"
+            self.exec_folder_name = f"{self.folder_name}{self.output_folder}"
         else:
             self.exec_folder_name = input("Diretório para report: ")
-            self.imgs_to_predict = f"/outputs/{self.exec_folder_name}"
-            self.exec_folder_name = f'{self.folder_name}{self.imgs_to_predict}'
+            self.output_folder= f"/outputs/{self.exec_folder_name}"
+            self.exec_folder_name = f"{self.folder_name}{self.output_folder}"
             exec_moment = self.exec_folder_name.split('/')[-1].split('_')[1]
             
         self.create_folder(self.exec_folder_name)
-        self.dir_predict = f"{self.imgs_to_predict}/fold_{self.n_fold}"
+        self.dir_predict = f"{self.output_folder}/fold_{self.n_fold}"
         n_fold_folder_name = f"{self.exec_folder_name}/fold_{self.n_fold}"
         self.create_folder(n_fold_folder_name)
         return exec_moment, n_fold_folder_name, self.exec_folder_name
