@@ -54,7 +54,7 @@ class Dataset:
         '''
         Recebe um glob das imagens e converte em um numpy array no formato que o Keras aceita
         '''
-        img = np.zeros((len(img_list),new_size,new_size), dtype=float)
+        img = np.zeros((len(img_list), new_size, new_size), dtype=float)
     
         for i in range(len(img_list)):
             
@@ -78,7 +78,7 @@ class Dataset:
         self.X = self.load_images_array(img_list=self.norm_imgs, original_size=self.ORIGINAL_SIZE, new_size = self.NEW_SIZE)
         self.Y = self.load_images_array(img_list=self.GT_imgs, original_size=self.ORIGINAL_SIZE, new_size = self.NEW_SIZE)
         print("\nImagens carregadas com sucesso.")
-        self.img_shape = self.X.shape[0]
+        self.img_shape = self.X.shape
     
     def split_dataset(self, seed_min=0, seed_max =2**20, test_size=0.2):
 
@@ -177,6 +177,7 @@ class SaveReport:
         self.model = model
 
         self.dir_predict = None
+        self.exec_folder_name = None
         self.save_model()
 
         
@@ -235,7 +236,7 @@ class PredictImages:
         SaveReport.create_folder(self, self.n_fold_folder_name + '/outputs_prod')
         for i in range(len(self.new_predicao)):
             io.imsave(self.n_fold_folder_name + '/outputs_prod/predicao_%s_%s.png'%(str(self.test_images.GT_imgs[i][-7:-4]), str(self.batch)),\
-                       Dataset.resize_one_img(self, self.new_predicao[i], self.test_images.img_shape, self.test_images.img_shape))
+                       Dataset.resize_one_img(self, self.new_predicao[i], self.test_images.img_shape[0], self.test_images.img_shape[0]))
         
         print("\nImagens preditas com sucesso.")
 
@@ -258,5 +259,9 @@ class DiceCoef(Dataset):
         intersection = keras.backend.sum(y_true_f * y_pred_f)
         return (2. * intersection + \
             keras.backend.epsilon()) / (keras.backend.sum(y_true_f) + keras.backend.sum(y_pred_f) + keras.backend.epsilon())  
+    
+    def save_dice(self, adress):
+        with open(adress, "w") as file:
+            file.write(f"Dice: {self.dice}")
 
 
