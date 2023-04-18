@@ -73,7 +73,8 @@ for i in range(n_fold):
     # Gravando imagens no disco
     create_folder(n_fold_folder_name + 'outputs_prod')
     for i in range(len(new_predicao)):
-        io.imsave(n_fold_folder_name + 'outputs_prod/predicao_%s_%s.png'%(str(GT_Test[i][-7:-4]), str(batch[index])), resize_one_img(new_predicao[i], img_shape[1], img_shape[0]))
+        io.imsave(n_fold_folder_name + 'outputs_prod/predicao_%s_%s.png'%(str(GT_Test[i][-7:-4]), str(batch[index])),\
+                  resize_one_img(new_predicao[i], img_shape[1], img_shape[0]))
     print("\nSegmentação das imagens de teste concluída.")
 
     K.clear_session()
