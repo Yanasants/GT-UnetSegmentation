@@ -4,33 +4,38 @@ Created on Fri Apr 14 19:04:14 2023
 
 @author: Labic
 """
-import glob
-import numpy as np
-from skimage.util import img_as_float
 from skimage import io
 import cv2
 import os
-import matplotlib.pyplot as plt
 
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers.experimental import preprocessing
-from sklearn.model_selection import train_test_split
-from tensorflow.data import AUTOTUNE
-
-import time
-import random
-import datetime
-
-from segmentation_models import Unet, Linknet
-from tensorflow.keras.optimizers import Adam
-from segmentation_models.losses import bce_jaccard_loss
-from segmentation_models.metrics import iou_score
 
 from skimage.util import img_as_float
 from tensorflow import keras
 
-#from utils_YS import create_folder, load_images_array
+import tensorflow as tf
+
+#from keras.callbacks.callbacks import EarlyStopping
+from keras.preprocessing.image import ImageDataGenerator
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+import glob
+import time
+import random
+import datetime
+
+from sklearn.model_selection import train_test_split
+
+from segmentation_models import Unet, Linknet
+from segmentation_models.losses import bce_jaccard_loss
+from segmentation_models.metrics import iou_score
+
+# Data augmentation 1 - 2022.05.07 Acrescentando DA no conj de valid
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers.experimental import preprocessing
+from tensorflow.data import AUTOTUNE
+from tensorflow.keras.optimizers import Adam
 
 class Dataset:
     def __init__(self, folder:str, norm_imgs_folder:str, gt_folder:str, ORIGINAL_SIZE=None, NEW_SIZE=None, X=None, Y=None):
@@ -55,7 +60,7 @@ class Dataset:
         Recebe um glob das imagens e converte em um numpy array no formato que o Keras aceita
         '''
         img = np.zeros((len(img_list), new_size, new_size), dtype=float)
-    
+        img_shape = img_as_float(io.imread(img_list[0])).shape
         for i in range(len(img_list)):
             
             im = np.copy(img_as_float(io.imread(img_list[i])))
@@ -64,7 +69,7 @@ class Dataset:
     
         # Padrão Keras
         img = img.reshape(-1, img.shape[-2], img.shape[-1], 1)
-        return img
+        return img, img_shape
         
     def load_images(self):
 
@@ -75,16 +80,13 @@ class Dataset:
             if self.norm_imgs[i][-8:-4] != self.GT_imgs[i][-8:-4]:
                 print('Algo está errado com as imagens')
 
-        self.X = self.load_images_array(img_list=self.norm_imgs, original_size=self.ORIGINAL_SIZE, new_size = self.NEW_SIZE)
-        self.Y = self.load_images_array(img_list=self.GT_imgs, original_size=self.ORIGINAL_SIZE, new_size = self.NEW_SIZE)
+        self.X, self.img_shape = self.load_images_array(img_list=self.norm_imgs, original_size=self.ORIGINAL_SIZE, new_size = self.NEW_SIZE)
+        self.Y, self.img_shape = self.load_images_array(img_list=self.GT_imgs, original_size=self.ORIGINAL_SIZE, new_size = self.NEW_SIZE)
         print("\nImagens carregadas com sucesso.")
-        self.img_shape = self.X.shape
     
     def split_dataset(self, seed_min=0, seed_max =2**20, test_size=0.2):
 
         random.seed(time.time())
-        seed_min = 0
-        seed_max = 2**20
         SEED_1 = random.randint(seed_min, seed_max)
 
         self.X_train, self.X_val, self.Y_train, self.Y_val = train_test_split(self.X, self.Y, test_size=test_size, random_state=SEED_1)
@@ -93,16 +95,26 @@ class Dataset:
         
     
 class DataAugmentation:
-    def __init__(self, X_train, Y_train, X_val, Y_val, factor=0.2, direction="horizontal", rotation=0.1):
-        self.factor = factor
+    def __init__(self, X_train, Y_train, use_batch_size, X_val, Y_val, factor=0.2, direction="horizontal", rotation=0.1):
+        self.trainAug = None
+        self.valAug = None
+
+        self.factor = factor 
         self.direction = direction
         self.rotation = rotation
+
         self.X_train, self.Y_train, self.X_val, self.Y_val = X_train, Y_train, X_val, Y_val
-        self.trainAug, self.valAug = self.train_val_sequential()
-        self.trainDS, self.valDS = self.train_val_DS()
+        self.use_batch_size = use_batch_size
+
+        self.trainDS = None
+        self.valDS = None
+        self.trainDS, self.valDS = self.augmentation()
         
-    def train_val_sequential(self):
+    @tf.autograph.experimental.do_not_convert
+    def augmentation(self):
+
         self.trainAug = Sequential([
+            #preprocessing.Rescaling(scale=1.0 / 255),
             preprocessing.RandomFlip(self.direction),
             preprocessing.RandomZoom(
                 height_factor=(-self.factor, +self.factor),
@@ -111,70 +123,88 @@ class DataAugmentation:
         ])
 
         self.valAug = Sequential([
+            #preprocessing.Rescaling(scale=1.0 / 255),
             preprocessing.RandomFlip(self.direction),
             preprocessing.RandomZoom(
                 height_factor=(-self.factor, +self.factor),
                 width_factor=(-self.factor, +self.factor)),
             preprocessing.RandomRotation(self.rotation)
         ])
-        return self.trainAug, self.valAug
-    
-    def train_val_DS(self, use_batch_size=4):
+
+        self.data_gen_args = dict(shear_range=self.factor,
+                            zoom_range=self.factor,
+                            horizontal_flip=True,
+                            validation_split=0.1)
+
+        self.image_datagen = ImageDataGenerator(**self.data_gen_args)
+
+        random.seed(time.time())
+        seed_min = 0
+        seed_max = 2**20
+        SEED_2 = random.randint(seed_min, seed_max)
+
+        self.image_generator = self.image_datagen.flow(self.X_train, self.Y_train,
+        batch_size=self.use_batch_size,
+        seed=SEED_2)
+
+        # Data Augmentation 2 - 2022.05.07 Fazendo DA no conj de valid
         self.trainDS = tf.data.Dataset.from_tensor_slices((self.X_train, self.Y_train))
         self.trainDS = self.trainDS.repeat(3)
         self.trainDS = (
             self.trainDS
-            .shuffle(use_batch_size * 100)
-            .batch(use_batch_size)
+            .shuffle(self.use_batch_size * 100)
+            .batch(self.use_batch_size)
             .map(lambda x, y: (self.trainAug(x), self.trainAug(y)), num_parallel_calls=AUTOTUNE)
             .prefetch(tf.data.AUTOTUNE)
         )
-    
+
         self.valDS = tf.data.Dataset.from_tensor_slices((self.X_val, self.Y_val))
         self.valDS = self.valDS.repeat(3)
         self.valDS = (
             self.valDS
-            .shuffle(use_batch_size * 100)
-            .batch(use_batch_size)
+            .shuffle(self.use_batch_size * 100)
+            .batch(self.use_batch_size)
             .map(lambda x, y: (self.valAug(x), self.valAug(y)), num_parallel_calls=AUTOTUNE)
             .prefetch(tf.data.AUTOTUNE)
         )
-        print("\nEtapa de Data Augmentation concluída.")
         return self.trainDS, self.valDS
-    
+
+
 
 class SegmentationModel:
-    def __init__(self, X_train, trainDS,valDS, epochs, callback, blackbone_name="vgg16",encoder_weights=None):
-        self.N = X_train.shape[-1]
-        self.blackbone_name = blackbone_name
-        self.encoder_weights = encoder_weights
-        self.trainDS = trainDS
-        self.valDS = valDS
+    def __init__(self, N, backbone_name, trainDS, valDS, epochs):
+        self.N = N
+        self.backbone_name = backbone_name
+        self.trainDS, self.valDS = trainDS, valDS
         self.epochs = epochs
-        self.callback = callback
+        self.model = None
+        self.history = None
+        self.model, self.history = self.generate_model()
 
-        self.model = self.generate_model()
-        
-    def generate_model(self):   
-        model = Unet(backbone_name=self.blackbone_name, encoder_weights=self.encoder_weights,
-                    input_shape=(None,None, self.N))
-        
-        model.compile(optimizer=Adam(), loss=bce_jaccard_loss, metrics=[iou_score])
-    
-        model.fit(self.trainDS, 
-                epochs=self.epochs, callbacks=[self.callback],
+    def generate_model(self):
+        model = Unet(backbone_name=self.backbone_name, encoder_weights=None,
+                    input_shape=(None,None,self.N))
+
+
+        model.compile(optimizer=Adam(), loss=bce_jaccard_loss, metrics=[iou_score]) 
+
+        history = model.fit(self.trainDS, 
+                epochs=self.epochs, 
                 validation_data=self.valDS)
-        return model
+        return model, history
+
+
 
 
     
 class SaveReport:
-    def __init__(self, model, folder_name, n_fold,epochs, use_batch_size=4):
+    def __init__(self, model, history, folder_name, n_fold,epochs, use_batch_size=4):
         self.folder_name = folder_name
         self.n_fold = n_fold
         self.epochs = epochs
         self.use_batch_size = use_batch_size
         self.model = model
+        self.history = history
 
         self.dir_predict = None
         self.exec_folder_name = None
@@ -212,6 +242,7 @@ class SaveReport:
         self.name_file = "model_"+ str(self.use_batch_size) + "_" + str(self.epochs) + "_exec_%s"%(exec_moment) + "_fold_%i"%self.n_fold
         self.model_name = self.n_fold_folder_name + '/%s.h5'%self.name_file
         self.model.save(self.model_name)
+        np.save(self.n_fold_folder_name + '/history_%i.npy'%self.n_fold, self.history.history)
         print(f"\nModelo salvo.\nNome: {self.name_file}\nSalvo em: {exec_folder_name}")
         
 
@@ -236,7 +267,7 @@ class PredictImages:
         SaveReport.create_folder(self, self.n_fold_folder_name + '/outputs_prod')
         for i in range(len(self.new_predicao)):
             io.imsave(self.n_fold_folder_name + '/outputs_prod/predicao_%s_%s.png'%(str(self.test_images.GT_imgs[i][-7:-4]), str(self.batch)),\
-                       Dataset.resize_one_img(self, self.new_predicao[i], self.test_images.img_shape[0], self.test_images.img_shape[0]))
+                       Dataset.resize_one_img(self, self.new_predicao[i], self.test_images.img_shape[1], self.test_images.img_shape[0]))
         
         print("\nImagens preditas com sucesso.")
 
@@ -248,7 +279,7 @@ class DiceCoef(Dataset):
         self.new_size = new_size
 
         list_pred_imgs = sorted(glob.glob(f"{self.pred_folder}")) 
-        self.pred_imgs = Dataset.load_images_array(self, img_list=list_pred_imgs,original_size=self.new_size, new_size=self.new_size)
+        self.pred_imgs, self.img_shape = Dataset.load_images_array(self, img_list=list_pred_imgs,original_size=self.new_size, new_size=self.new_size)
 
         self.dice = self.dice_coef(y_true=self.gt_imgs, y_pred=self.pred_imgs)
         print(f"Coeficiente Dice: {self.dice}")
